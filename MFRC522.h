@@ -75,8 +75,8 @@
 #ifndef MFRC522_h
 #define MFRC522_h
 
-#include <Arduino.h>
-#include <SPI.h>
+typedef int8_t byte;
+typedef int16_t word;
 
 // Firmware data for self-test
 // Reference values based on firmware version; taken from 16.1.1 in spec.
@@ -291,7 +291,7 @@ public:
 	/////////////////////////////////////////////////////////////////////////////////////
 	// Functions for setting up the Arduino
 	/////////////////////////////////////////////////////////////////////////////////////
-	MFRC522(byte chipSelectPin, byte resetPowerDownPin);
+	MFRC522();
 	void setSPIConfig();
 	
 	/////////////////////////////////////////////////////////////////////////////////////
@@ -349,11 +349,11 @@ public:
 	byte PCD_MIFARE_Transceive(byte *sendData, byte sendLen, bool acceptTimeout = false);
 	// old function used too much memory, now name moved to flash; if you need char, copy from flash to memory
 	//const char *GetStatusCodeName(byte code);
-	const __FlashStringHelper *GetStatusCodeName(byte code);
+	const String *GetStatusCodeName(byte code);
 	byte PICC_GetType(byte sak);
 	// old function used too much memory, now name moved to flash; if you need char, copy from flash to memory
 	//const char *PICC_GetTypeName(byte type);
-	const __FlashStringHelper *PICC_GetTypeName(byte type);
+	const String *PICC_GetTypeName(byte type);
 	void PICC_DumpToSerial(Uid *uid);
 	void PICC_DumpMifareClassicToSerial(Uid *uid, byte piccType, MIFARE_Key *key);
 	void PICC_DumpMifareClassicSectorToSerial(Uid *uid, MIFARE_Key *key, byte sector);
@@ -370,8 +370,6 @@ public:
 	bool PICC_ReadCardSerial();
 	
 private:
-	byte _chipSelectPin;		// Arduino pin connected to MFRC522's SPI slave select input (Pin 24, NSS, active low)
-	byte _resetPowerDownPin;	// Arduino pin connected to MFRC522's reset and power down input (Pin 6, NRSTPD, active low)
 	byte MIFARE_TwoStepHelper(byte command, byte blockAddr, long data);
 };
 
