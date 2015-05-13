@@ -75,13 +75,22 @@
 #ifndef MFRC522_h
 #define MFRC522_h
 #include <string>
+#include <linux/types.h>
+#include <stdint.h>
+#include <cstring>
+#include <stdio.h>
+
+using namespace std;
+
 typedef int8_t byte;
 typedef int16_t word;
 
 // Firmware data for self-test
 // Reference values based on firmware version; taken from 16.1.1 in spec.
 // Version 1.0
-const byte MFRC522_firmware_referenceV1_0[] PROGMEM = {
+
+
+const byte MFRC522_firmware_referenceV1_0[]  = {
 	0x00, 0xC6, 0x37, 0xD5, 0x32, 0xB7, 0x57, 0x5C,
 	0xC2, 0xD8, 0x7C, 0x4D, 0xD9, 0x70, 0xC7, 0x73,
 	0x10, 0xE6, 0xD2, 0xAA, 0x5E, 0xA1, 0x3E, 0x5A,
@@ -91,8 +100,9 @@ const byte MFRC522_firmware_referenceV1_0[] PROGMEM = {
 	0x1F, 0xA7, 0xF3, 0x53, 0x14, 0xDE, 0x7E, 0x02,
 	0xD9, 0x0F, 0xB5, 0x5E, 0x25, 0x1D, 0x29, 0x79
 };
+
 // Version 2.0
-const byte MFRC522_firmware_referenceV2_0[] PROGMEM = {
+const byte MFRC522_firmware_referenceV2_0[] = {
 	0x00, 0xEB, 0x66, 0xBA, 0x57, 0xBF, 0x23, 0x95,
 	0xD0, 0xE3, 0x0D, 0x3D, 0x27, 0x89, 0x5C, 0xDE,
 	0x9D, 0x3B, 0xA7, 0x00, 0x21, 0x5B, 0x89, 0x82,
@@ -349,11 +359,11 @@ public:
 	byte PCD_MIFARE_Transceive(byte *sendData, byte sendLen, bool acceptTimeout = false);
 	// old function used too much memory, now name moved to flash; if you need char, copy from flash to memory
 	//const char *GetStatusCodeName(byte code);
-	const String *GetStatusCodeName(byte code);
+	const string GetStatusCodeName(byte code);
 	byte PICC_GetType(byte sak);
 	// old function used too much memory, now name moved to flash; if you need char, copy from flash to memory
 	//const char *PICC_GetTypeName(byte type);
-	const String *PICC_GetTypeName(byte type);
+	const string PICC_GetTypeName(byte type);
 	void PICC_DumpToSerial(Uid *uid);
 	void PICC_DumpMifareClassicToSerial(Uid *uid, byte piccType, MIFARE_Key *key);
 	void PICC_DumpMifareClassicSectorToSerial(Uid *uid, MIFARE_Key *key, byte sector);

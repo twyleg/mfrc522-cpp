@@ -4,7 +4,7 @@
  * Released into the public domain.
  */
 
-#include <MFRC522.h>
+#include "MFRC522.h"
 #include "bcm2835.h"
 
 #define RSTPIN RPI_V2_GPIO_P1_22
@@ -67,11 +67,8 @@ void MFRC522::PCD_WriteRegister(	byte reg,		///< The register to write to. One o
 					byte *values	///< The values to write. Byte array.
 					) {
   for (byte index = 0; index < count; index++) {
-    char data[2];
-    data[0] = (reg & 0x7E);
-    data[1] = value;
-    bcm2835_spi_transfern(data, 2);
-  }
+  	PCD_WriteRegister(reg, values[index]);
+	}
 
 } // End PCD_WriteRegister()
 
@@ -104,7 +101,7 @@ void MFRC522::PCD_ReadRegister(	byte reg,		///< The register to read from. One o
   byte address = 0x80 | (reg & 0x7E);		// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
   byte index = 0;							// Index in values array.
   count--;								// One read is performed outside of the loop
-  bcm2835_spi_transfer(adress);
+  bcm2835_spi_transfer(address);
   while (index < count) {
     if (index == 0 && rxAlign) {		// Only update bit positions rxAlign..7 in values[0]
       // Create bit mask for bit positions rxAlign..7
@@ -113,12 +110,12 @@ void MFRC522::PCD_ReadRegister(	byte reg,		///< The register to read from. One o
 	mask |= (1 << i);
       }
       // Read value and tell that we want to read the same address again.
-      byte value = bcm2835_spi_transfer(adress);
+      byte value = bcm2835_spi_transfer(address);
       // Apply mask to both current value of values[0] and the new data in value.
       values[0] = (values[index] & ~mask) | (value & mask);
     }
     else { // Normal case
-      values[index] = bcm2835_spi_transfer(adress);
+      values[index] = bcm2835_spi_transfer(address);
     }
     index++;
   }
@@ -333,7 +330,7 @@ bool MFRC522::PCD_PerformSelfTest() {
 	
   // Verify that the results match up to our expectations
   for (i = 0; i < 64; i++) {
-    if (result[i] != pgm_read_byte(&(reference[i]))) {
+    if (result[i] != reference[i]) {
       return false;
     }
   }
@@ -1143,16 +1140,16 @@ byte MFRC522::PCD_MIFARE_Transceive(	byte *sendData,		///< Pointer to the data t
 const string MFRC522::GetStatusCodeName(byte code	///< One of the StatusCode enums.
 						      ) {
   switch (code) {
-  case STATUS_OK:				return F("Success.");										break;
-  case STATUS_ERROR:			return F("Error in communication.");						break;
-  case STATUS_COLLISION:		return F("Collission detected.");							break;
-  case STATUS_TIMEOUT:		return F("Timeout in communication.");						break;
-  case STATUS_NO_ROOM:		return F("A buffer is not big enough.");					break;
-  case STATUS_INTERNAL_ERROR:	return F("Internal error in the code. Should not happen.");	break;
-  case STATUS_INVALID:		return F("Invalid argument.");								break;
-  case STATUS_CRC_WRONG:		return F("The CRC_A does not match.");						break;
-  case STATUS_MIFARE_NACK:	return F("A MIFARE PICC responded with NAK.");				break;
-  default:					return F("Unknown error");									break;
+  case STATUS_OK:				return ("Success.");										break;
+  case STATUS_ERROR:			return ("Error in communication.");						break;
+  case STATUS_COLLISION:		return ("Collission detected.");							break;
+  case STATUS_TIMEOUT:		return ("Timeout in communication.");						break;
+  case STATUS_NO_ROOM:		return ("A buffer is not big enough.");					break;
+  case STATUS_INTERNAL_ERROR:	return ("Internal error in the code. Should not happen.");	break;
+  case STATUS_INVALID:		return ("Invalid argument.");								break;
+  case STATUS_CRC_WRONG:		return ("The CRC_A does not match.");						break;
+  case STATUS_MIFARE_NACK:	return ("A MIFARE PICC responded with NAK.");				break;
+  default:					return ("Unknown error");									break;
   }
 } // End GetStatusCodeName()
 
@@ -1193,7 +1190,7 @@ byte MFRC522::PICC_GetType(byte sak		///< The SAK byte returned from PICC_Select
  * Returns a String pointer to the PICC type name.
  * 
  */
-const String MFRC522::PICC_GetTypeName(byte piccType	///< One of the PICC_Type enums.
+const string MFRC522::PICC_GetTypeName(byte piccType	///< One of the PICC_Type enums.
 						     ) {
   switch (piccType) {
   case PICC_TYPE_ISO_14443_4:		return ("PICC compliant with ISO/IEC 14443-4");	break;
@@ -1223,10 +1220,10 @@ void MFRC522::PICC_DumpToSerial(Uid *uid	///< Pointer to Uid struct returned fro
   printf("Card UID:");
   for (byte i = 0; i < uid->size; i++) {
     if(uid->uidByte[i] < 0x10)
-      print(" 0");
+	printf(" 0");
     else
-      printf(" ");
-    printf(uid->uidByte[i], HEX);
+	printf(" ");
+    printf("%X", uid->uidByte[i]);
   } 
   printf("\n");
 	
@@ -1364,7 +1361,7 @@ void MFRC522::PICC_DumpMifareClassicSectorToSerial(Uid *uid,			///< Pointer to U
 	printf("   "); // Pad with spaces
       else
 	printf("  "); // Pad with spaces
-      printf(sector);
+      printf("%02X",sector);
       printf("   ");
     }
     else {
@@ -1379,7 +1376,7 @@ void MFRC522::PICC_DumpMifareClassicSectorToSerial(Uid *uid,			///< Pointer to U
       else
 	printf(" "); // Pad with spaces
     }
-    printf(blockAddr);
+    printf("%02X",blockAddr);
     printf("  ");
     // Establish encrypted communications before reading the first block
     if (isSectorTrailer) {
@@ -1550,9 +1547,9 @@ bool MFRC522::MIFARE_OpenUidBackdoor(bool logErrors) {
   byte status = PCD_TransceiveData(&cmd, (byte)1, response, &received, &validBits, (byte)0, false); // 40
   if(status != STATUS_OK) {
     if(logErrors) {
-      printf("Card did not respond to 0x40 after HALT command. Are you sure it is a UID changeable one?"));
+      printf("Card did not respond to 0x40 after HALT command. Are you sure it is a UID changeable one?");
       printf("Error name: ");
-      printf("%s",GetStatusCodeName(status).c_char());
+      printf("%s",GetStatusCodeName(status).c_str());
     }
     return false;
   }
@@ -1575,7 +1572,7 @@ bool MFRC522::MIFARE_OpenUidBackdoor(bool logErrors) {
     if(logErrors) {
       printf("Error in communication at command 0x43, after successfully executing 0x40");
       printf("Error name: ");
-      printf("%s\n",GetStatusCodeName(status));
+      printf("%s\n",GetStatusCodeName(status).c_str());
     }
     return false;
   }
@@ -1626,7 +1623,7 @@ bool MFRC522::MIFARE_SetUid(byte *newUid, byte uidSize, bool logErrors) {
       //			  PICC_WakeupA(atqa_answer, &atqa_size);
 			
       if (!PICC_IsNewCardPresent() || !PICC_ReadCardSerial()) {
-	printlnf("No card was previously selected, and none are available. Failed to set UID.");
+	printf("No card was previously selected, and none are available. Failed to set UID.");
 	return false;
       }
 			
@@ -1635,7 +1632,7 @@ bool MFRC522::MIFARE_SetUid(byte *newUid, byte uidSize, bool logErrors) {
 	// We tried, time to give up
 	if (logErrors) {
 	 printf("Failed to authenticate to card for reading, could not set UID: ");
-	 printf("%s\n",GetStatusCodeName(status).c_str();
+	 printf("%s\n",GetStatusCodeName(status).c_str());
 	}
 	return false;
       }
@@ -1714,7 +1711,7 @@ bool MFRC522::MIFARE_UnbrickUidSector(bool logErrors) {
   if (status != STATUS_OK) {
     if (logErrors) {
       printf("MIFARE_Write() failed: ");
-      printf("%s\n",GetStatusCodeName(status)._cstr());
+      printf("%s\n",GetStatusCodeName(status).c_str());
     }
     return false;
   }
