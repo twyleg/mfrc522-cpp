@@ -74,7 +74,7 @@
  */
 #ifndef MFRC522_h
 #define MFRC522_h
-
+#include <string>
 typedef int8_t byte;
 typedef int16_t word;
 
