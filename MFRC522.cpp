@@ -6,8 +6,15 @@
 
 #include "MFRC522.h"
 #include "bcm2835.h"
+#include <linux/types.h>
+#include <stdint.h>
+#include <cstring>
+#include <stdio.h>
+#include <string>
 
 #define RSTPIN RPI_V2_GPIO_P1_22
+
+using namespace std;
 
 /**
  * Constructor.
@@ -52,7 +59,7 @@ void MFRC522::PCD_WriteRegister(	byte reg,		///< The register to write to. One o
 					) {
 
   char data[2];
-  data[0] = (reg & 0x7E);
+  data[0] = reg & 0x7E;
   data[1] = value;
   bcm2835_spi_transfern(data, 2);
   
@@ -334,7 +341,6 @@ bool MFRC522::PCD_PerformSelfTest() {
       return false;
     }
   }
-	
   // Test passed; all is good.
   return true;
 } // End PCD_PerformSelfTest()
