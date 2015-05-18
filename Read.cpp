@@ -1,6 +1,18 @@
-#include "MFRC522.h"
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 
-MFRC522::MIFARE_Key key;
+void delay(int ms){
+#ifdef WIN32
+  Sleep(ms);
+#else
+  usleep(ms*1000);
+#endif
+}
+
+#include "MFRC522.h"
 
 int main(){
   MFRC522 mfrc;
@@ -23,11 +35,12 @@ int main(){
       }
       else{
 	printf(" ");
-	printf("&X", mfrc.uid.uidByte[i]);
+	printf("%X", mfrc.uid.uidByte[i]);
       }
       
     }
-    
+    printf("\n");
+    delay(1000);
   }
   return 0;
 }
