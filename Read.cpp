@@ -5,7 +5,7 @@ MFRC522::MIFARE_Key key;
 int main(){
   MFRC522 mfrc;
 
-  mfrc522.PCD_Init();
+  mfrc.PCD_Init();
 
   while(1){
     // Look for a card
@@ -19,17 +19,15 @@ int main(){
     for(byte i = 0; i < mfrc.uid.size; ++i){
       if(mfrc.uid.uidByte[i] < 0x10){
 	printf(" 0");
-	printf("%X",buffer[i]);
+	printf("%X",mfrc.uid.uidByte[i]);
       }
       else{
 	printf(" ");
-	printf("&X", buffer[i]);
+	printf("&X", mfrc.uid.uidByte[i]);
       }
-    
+      
     }
-  
+    
   }
-}
-
-return 0;
+  return 0;
 }
