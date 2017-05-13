@@ -10,21 +10,22 @@ http://www.airspayce.com/mikem/bcm2835/bcm2835-1.50.tar.gz
 
 Fetch the tar-file and install it:
 
-$ tar zxvf bcm2835-1.xx.tar.gz
+  tar zxvf bcm2835-1.xx.tar.gz
 
-$ cd bcm2835-1.xx
+  cd bcm2835-1.xx
 
-$ ./configure
+  ./configure
 
-$ make
+  make
 
-$ sudo make check
+  sudo make check
 
-$ sudo make install
+  sudo make install
 
 
 To build:
-$ g++ MFRC522.cpp Read.cpp -std=c++11 -lbcm2835
+
+  g++ MFRC522.cpp Read.cpp -std=c++11 -lbcm2835
 
 Pin Layout
 ----------
