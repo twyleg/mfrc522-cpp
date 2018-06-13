@@ -546,7 +546,7 @@ byte MFRC522::PICC_Select(	Uid *uid,			///< Pointer to Uid struct. Normally outp
   byte count;
   byte index;
   byte uidIndex;					// The first index in uid->uidByte[] that is used in the current Cascade Level.
-  char currentLevelKnownBits;		// The number of known UID bits in the current Cascade Level.
+  signed char currentLevelKnownBits;		// The number of known UID bits in the current Cascade Level.
   byte buffer[9];					// The SELECT/ANTICOLLISION commands uses a 7 byte standard frame + 2 bytes CRC_A
   byte bufferUsed;				// The number of bytes used in the buffer, ie the number of bytes to transfer to the FIFO.
   byte rxAlign;					// Used in BitFramingReg. Defines the bit position for the first bit received.
