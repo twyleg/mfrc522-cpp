@@ -1,0 +1,3 @@
+[submodule "external/spidevpp"]
+	path = external/spidevpp
+	url = git@github.com:twyleg/spidevpp.git

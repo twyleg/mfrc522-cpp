@@ -1,32 +1,24 @@
-/**
- * MFRC522.h - Library to use ARDUINO RFID MODULE KIT 13.56 MHZ WITH TAGS SPI W AND R BY COOQROBOT.
- * Based on code Dr.Leong   ( WWW.B2CQSHOP.COM )
- * Created by Miguel Balboa (circuitito.com), Jan, 2012.
- * Rewritten by Søren Thing Andersen (access.thing.dk), fall of 2013 (Translation to English, refactored, comments, anti collision, cascade levels.)
- * Extended by Tom Clement with functionality to write to sector 0 of UID changeable Mifare cards.
- * Released into the public domain.
- * 
+// Copyright (C) 2021 twyleg
+#pragma once
 
-
--- Repurposed to fit Raspberry Pi --- 
-
- */
-#ifndef MFRC522_h
-#define MFRC522_h
+#include "ispi.h"
+#include "igpio.h"
 
 #include <stdint.h>
 #include <stdio.h>
 #include <string>
+
+namespace mfrc522 {
+
 using namespace std;
 
-typedef uint8_t byte;
 typedef uint16_t word;
 
 // Firmware data for self-test
 // Reference values based on firmware version; taken from 16.1.1 in spec.
 // Version 1.0
 
-const byte MFRC522_firmware_referenceV1_0[]  = {
+const uint8_t MFRC522_firmware_referenceV1_0[]  = {
 	0x00, 0xC6, 0x37, 0xD5, 0x32, 0xB7, 0x57, 0x5C,
 	0xC2, 0xD8, 0x7C, 0x4D, 0xD9, 0x70, 0xC7, 0x73,
 	0x10, 0xE6, 0xD2, 0xAA, 0x5E, 0xA1, 0x3E, 0x5A,
@@ -38,7 +30,7 @@ const byte MFRC522_firmware_referenceV1_0[]  = {
 };
 
 // Version 2.0
-const byte MFRC522_firmware_referenceV2_0[] = {
+const uint8_t MFRC522_firmware_referenceV2_0[] = {
 	0x00, 0xEB, 0x66, 0xBA, 0x57, 0xBF, 0x23, 0x95,
 	0xD0, 0xE3, 0x0D, 0x3D, 0x27, 0x89, 0x5C, 0xDE,
 	0x9D, 0x3B, 0xA7, 0x00, 0x21, 0x5B, 0x89, 0x82,
@@ -54,7 +46,7 @@ const byte MFRC522_firmware_referenceV2_0[] = {
 class MFRC522 {
 public:
 	// MFRC522 registers. Described in chapter 9 of the datasheet.
-	// When using SPI all addresses are shifted one bit left in the "SPI address byte" (section 8.1.2.3)
+	// When using SPI all addresses are shifted one bit left in the "SPI address uint8_t" (section 8.1.2.3)
 	enum PCD_Register {
 		// Page 0: Command and status
 		//						  0x00			// reserved for future use
@@ -63,7 +55,7 @@ public:
 		DivIEnReg				= 0x03 << 1,	// enable and disable interrupt request control bits
 		ComIrqReg				= 0x04 << 1,	// interrupt request bits
 		DivIrqReg				= 0x05 << 1,	// interrupt request bits
-		ErrorReg				= 0x06 << 1,	// error bits showing the error status of the last command executed 
+		ErrorReg				= 0x06 << 1,	// error bits showing the error status of the last command executed
 		Status1Reg				= 0x07 << 1,	// communication status bits
 		Status2Reg				= 0x08 << 1,	// receiver and transmitter status bits
 		FIFODataReg				= 0x09 << 1,	// input and output of 64 byte FIFO buffer
@@ -73,10 +65,10 @@ public:
 		BitFramingReg			= 0x0D << 1,	// adjustments for bit-oriented frames
 		CollReg					= 0x0E << 1,	// bit position of the first bit-collision detected on the RF interface
 		//						  0x0F			// reserved for future use
-		
+
 		// Page 1: Command
 		// 						  0x10			// reserved for future use
-		ModeReg					= 0x11 << 1,	// defines general modes for transmitting and receiving 
+		ModeReg					= 0x11 << 1,	// defines general modes for transmitting and receiving
 		TxModeReg				= 0x12 << 1,	// defines transmission data rate and framing
 		RxModeReg				= 0x13 << 1,	// defines reception data rate and framing
 		TxControlReg			= 0x14 << 1,	// controls the logical behavior of the antenna driver pins TX1 and TX2
@@ -91,7 +83,7 @@ public:
 		MfRxReg					= 0x1D << 1,	// controls some MIFARE communication receive parameters
 		// 						  0x1E			// reserved for future use
 		SerialSpeedReg			= 0x1F << 1,	// selects the speed of the serial UART interface
-		
+
 		// Page 2: Configuration
 		// 						  0x20			// reserved for future use
 		CRCResultRegH			= 0x21 << 1,	// shows the MSB and LSB values of the CRC calculation
@@ -100,7 +92,7 @@ public:
 		ModWidthReg				= 0x24 << 1,	// controls the ModWidth setting?
 		// 						  0x25			// reserved for future use
 		RFCfgReg				= 0x26 << 1,	// configures the receiver gain
-		GsNReg					= 0x27 << 1,	// selects the conductance of the antenna driver pins TX1 and TX2 for modulation 
+		GsNReg					= 0x27 << 1,	// selects the conductance of the antenna driver pins TX1 and TX2 for modulation
 		CWGsPReg				= 0x28 << 1,	// defines the conductance of the p-driver output during periods of no modulation
 		ModGsPReg				= 0x29 << 1,	// defines the conductance of the p-driver output during periods of modulation
 		TModeReg				= 0x2A << 1,	// defines settings for the internal timer
@@ -109,7 +101,7 @@ public:
 		TReloadRegL				= 0x2D << 1,
 		TCounterValueRegH		= 0x2E << 1,	// shows the 16-bit timer value
 		TCounterValueRegL		= 0x2F << 1,
-		
+
 		// Page 3: Test Registers
 		// 						  0x30			// reserved for future use
 		TestSel1Reg				= 0x31 << 1,	// general test signal configuration
@@ -128,7 +120,7 @@ public:
 		// 						  0x3E			// reserved for production tests
 		// 						  0x3F			// reserved for production tests
 	};
-	
+
 	// MFRC522 commands. Described in chapter 10 of the datasheet.
 	enum PCD_Command {
 		PCD_Idle				= 0x00,		// no action, cancels current command execution
@@ -142,7 +134,7 @@ public:
 		PCD_MFAuthent 			= 0x0E,		// performs the MIFARE standard authentication as a reader
 		PCD_SoftReset			= 0x0F		// resets the MFRC522
 	};
-	
+
 	// MFRC522 RxGain[2:0] masks, defines the receiver's signal voltage gain factor (on the PCD).
 	// Described in 9.3.3.6 / table 98 of the datasheet at http://www.nxp.com/documents/data_sheet/MFRC522.pdf
 	enum PCD_RxGain {
@@ -158,7 +150,7 @@ public:
 		RxGain_avg				= 0x04 << 4,	// 100b - 33 dB, average, convenience for RxGain_33dB
 		RxGain_max				= 0x07 << 4		// 111b - 48 dB, maximum, convenience for RxGain_48dB
 	};
-	
+
 	// Commands sent to the PICC.
 	enum PICC_Command {
 		// The commands used by the PCD to manage communication with several PICCs (ISO 14443-3, Type A, section 6.4)
@@ -184,17 +176,17 @@ public:
 		// The PICC_CMD_MF_READ and PICC_CMD_MF_WRITE can also be used for MIFARE Ultralight.
 		PICC_CMD_UL_WRITE		= 0xA2		// Writes one 4 byte page to the PICC.
 	};
-	
+
 	// MIFARE constants that does not fit anywhere else
 	enum MIFARE_Misc {
 		MF_ACK					= 0xA,		// The MIFARE Classic uses a 4 bit ACK/NAK. Any other value than 0xA is NAK.
 		MF_KEY_SIZE				= 6			// A Mifare Crypto1 key is 6 bytes.
 	};
-	
+
 	// PICC types we can detect. Remember to update PICC_GetTypeName() if you add more.
 	enum PICC_Type {
 		PICC_TYPE_UNKNOWN		= 0,
-		PICC_TYPE_ISO_14443_4	= 1,	// PICC compliant with ISO/IEC 14443-4 
+		PICC_TYPE_ISO_14443_4	= 1,	// PICC compliant with ISO/IEC 14443-4
 		PICC_TYPE_ISO_18092		= 2, 	// PICC compliant with ISO/IEC 18092 (NFC)
 		PICC_TYPE_MIFARE_MINI	= 3,	// MIFARE Classic protocol, 320 bytes
 		PICC_TYPE_MIFARE_1K		= 4,	// MIFARE Classic protocol, 1KB
@@ -204,7 +196,7 @@ public:
 		PICC_TYPE_TNP3XXX		= 8,	// Only mentioned in NXP AN 10833 MIFARE Type Identification Procedure
 		PICC_TYPE_NOT_COMPLETE	= 255	// SAK indicates UID is not complete.
 	};
-	
+
 	// Return codes from the functions in this class. Remember to update GetStatusCodeName() if you add more.
 	enum StatusCode {
 		STATUS_OK				= 1,	// Success
@@ -217,42 +209,44 @@ public:
 		STATUS_CRC_WRONG		= 8,	// The CRC_A does not match
 		STATUS_MIFARE_NACK		= 9		// A MIFARE PICC responded with NAK.
 	};
-	
+
 	// A struct used for passing the UID of a PICC.
 	typedef struct {
-		byte		size;			// Number of bytes in the UID. 4, 7 or 10.
-		byte		uidByte[10];
-		byte		sak;			// The SAK (Select acknowledge) byte returned from the PICC after successful selection.
+		uint8_t		size;			// Number of bytes in the UID. 4, 7 or 10.
+		uint8_t		uidByte[10];
+		uint8_t		sak;			// The SAK (Select acknowledge) byte returned from the PICC after successful selection.
 	} Uid;
-	
+
 	// A struct used for passing a MIFARE Crypto1 key
 	typedef struct {
-		byte		keyByte[MF_KEY_SIZE];
+		uint8_t		keyByte[MF_KEY_SIZE];
 	} MIFARE_Key;
-	
+
 	// Member variables
 	Uid uid;								// Used by PICC_ReadCardSerial().
-	
+
+	ISpi& mSpi;
+	IGpio& mResetPin;
+
 	// Size of the MFRC522 FIFO
-	static const byte FIFO_SIZE = 64;		// The FIFO is 64 bytes.
-	
+	static const uint8_t FIFO_SIZE = 64;		// The FIFO is 64 bytes.
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	// Functions for setting up the Raspberry Pi
 	/////////////////////////////////////////////////////////////////////////////////////
-	MFRC522();
-	void setSPIConfig();
+	MFRC522(ISpi&, IGpio& resetPin);
 	/////////////////////////////////////////////////////////////////////////////////////
 	// Basic interface functions for communicating with the MFRC522
 	/////////////////////////////////////////////////////////////////////////////////////
-	void PCD_WriteRegister(byte reg, byte value);
-	void PCD_WriteRegister(byte reg, byte count, byte *values);
-	byte PCD_ReadRegister(byte reg);
-	void PCD_ReadRegister(byte reg, byte count, byte *values, byte rxAlign = 0);
+	void PCD_WriteRegister(uint8_t reg, uint8_t value);
+	void PCD_WriteRegister(uint8_t reg, uint8_t count, uint8_t *values);
+	uint8_t PCD_ReadRegister(uint8_t reg);
+	void PCD_ReadRegister(uint8_t reg, uint8_t count, uint8_t *values, uint8_t rxAlign = 0);
 	void setBitMask(unsigned char reg, unsigned char mask);
-	void PCD_SetRegisterBitMask(byte reg, byte mask);
-	void PCD_ClearRegisterBitMask(byte reg, byte mask);
-	byte PCD_CalculateCRC(byte *data, byte length, byte *result);
-	
+	void PCD_SetRegisterBitMask(uint8_t reg, uint8_t mask);
+	void PCD_ClearRegisterBitMask(uint8_t reg, uint8_t mask);
+	uint8_t PCD_CalculateCRC(uint8_t *data, uint8_t length, uint8_t *result);
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	// Functions for manipulating the MFRC522
 	/////////////////////////////////////////////////////////////////////////////////////
@@ -260,64 +254,64 @@ public:
 	void PCD_Reset();
 	void PCD_AntennaOn();
 	void PCD_AntennaOff();
-	byte PCD_GetAntennaGain();
-	void PCD_SetAntennaGain(byte mask);
+	uint8_t PCD_GetAntennaGain();
+	void PCD_SetAntennaGain(uint8_t mask);
 	bool PCD_PerformSelfTest();
-	
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	// Functions for communicating with PICCs
 	/////////////////////////////////////////////////////////////////////////////////////
-	byte PCD_TransceiveData(byte *sendData, byte sendLen, byte *backData, byte *backLen, byte *validBits = NULL, byte rxAlign = 0, bool checkCRC = false);
-	byte PCD_CommunicateWithPICC(byte command, byte waitIRq, byte *sendData, byte sendLen, byte *backData = NULL, byte *backLen = NULL, byte *validBits = NULL, byte rxAlign = 0, bool checkCRC = false);
-	byte PICC_RequestA(byte *bufferATQA, byte *bufferSize);
-	byte PICC_WakeupA(byte *bufferATQA, byte *bufferSize);
-	byte PICC_REQA_or_WUPA(byte command, byte *bufferATQA, byte *bufferSize);
-	byte PICC_Select(Uid *uid, byte validBits = 0);
-	byte PICC_HaltA();
-	
+	uint8_t PCD_TransceiveData(uint8_t *sendData, uint8_t sendLen, uint8_t *backData, uint8_t *backLen, uint8_t *validBits = NULL, uint8_t rxAlign = 0, bool checkCRC = false);
+	uint8_t PCD_CommunicateWithPICC(uint8_t command, uint8_t waitIRq, uint8_t *sendData, uint8_t sendLen, uint8_t *backData = NULL, uint8_t *backLen = NULL, uint8_t *validBits = NULL, uint8_t rxAlign = 0, bool checkCRC = false);
+	uint8_t PICC_RequestA(uint8_t *bufferATQA, uint8_t *bufferSize);
+	uint8_t PICC_WakeupA(uint8_t *bufferATQA, uint8_t *bufferSize);
+	uint8_t PICC_REQA_or_WUPA(uint8_t command, uint8_t *bufferATQA, uint8_t *bufferSize);
+	uint8_t PICC_Select(Uid *uid, uint8_t validBits = 0);
+	uint8_t PICC_HaltA();
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	// Functions for communicating with MIFARE PICCs
 	/////////////////////////////////////////////////////////////////////////////////////
-	byte PCD_Authenticate(byte command, byte blockAddr, MIFARE_Key *key, Uid *uid);
+	uint8_t PCD_Authenticate(uint8_t command, uint8_t blockAddr, MIFARE_Key *key, Uid *uid);
 	void PCD_StopCrypto1();
-	byte MIFARE_Read(byte blockAddr, byte *buffer, byte *bufferSize);
-	byte MIFARE_Write(byte blockAddr, byte *buffer, byte bufferSize);
-	byte MIFARE_Decrement(byte blockAddr, long delta);
-	byte MIFARE_Increment(byte blockAddr, long delta);
-	byte MIFARE_Restore(byte blockAddr);
-	byte MIFARE_Transfer(byte blockAddr);
-	byte MIFARE_Ultralight_Write(byte page, byte *buffer, byte bufferSize);
-	byte MIFARE_GetValue(byte blockAddr, long *value);
-	byte MIFARE_SetValue(byte blockAddr, long value);
-	
+	uint8_t MIFARE_Read(uint8_t blockAddr, uint8_t *buffer, uint8_t *bufferSize);
+	uint8_t MIFARE_Write(uint8_t blockAddr, uint8_t *buffer, uint8_t bufferSize);
+	uint8_t MIFARE_Decrement(uint8_t blockAddr, long delta);
+	uint8_t MIFARE_Increment(uint8_t blockAddr, long delta);
+	uint8_t MIFARE_Restore(uint8_t blockAddr);
+	uint8_t MIFARE_Transfer(uint8_t blockAddr);
+	uint8_t MIFARE_Ultralight_Write(uint8_t page, uint8_t *buffer, uint8_t bufferSize);
+	uint8_t MIFARE_GetValue(uint8_t blockAddr, long *value);
+	uint8_t MIFARE_SetValue(uint8_t blockAddr, long value);
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	// Support functions
 	/////////////////////////////////////////////////////////////////////////////////////
-	byte PCD_MIFARE_Transceive(byte *sendData, byte sendLen, bool acceptTimeout = false);
+	uint8_t PCD_MIFARE_Transceive(uint8_t *sendData, uint8_t sendLen, bool acceptTimeout = false);
 	// old function used too much memory, now name moved to flash; if you need char, copy from flash to memory
-	//const char *GetStatusCodeName(byte code);
-	const string GetStatusCodeName(byte code);
-	byte PICC_GetType(byte sak);
+	//const char *GetStatusCodeName(uint8_t code);
+	const string GetStatusCodeName(uint8_t code);
+	uint8_t PICC_GetType(uint8_t sak);
 	// old function used too much memory, now name moved to flash; if you need char, copy from flash to memory
-	//const char *PICC_GetTypeName(byte type);
-	const string PICC_GetTypeName(byte type);
+	//const char *PICC_GetTypeName(uint8_t type);
+	const string PICC_GetTypeName(uint8_t type);
 	void PICC_DumpToSerial(Uid *uid);
-	void PICC_DumpMifareClassicToSerial(Uid *uid, byte piccType, MIFARE_Key *key);
-	void PICC_DumpMifareClassicSectorToSerial(Uid *uid, MIFARE_Key *key, byte sector);
+	void PICC_DumpMifareClassicToSerial(Uid *uid, uint8_t piccType, MIFARE_Key *key);
+	void PICC_DumpMifareClassicSectorToSerial(Uid *uid, MIFARE_Key *key, uint8_t sector);
 	void PICC_DumpMifareUltralightToSerial();
-	void MIFARE_SetAccessBits(byte *accessBitBuffer, byte g0, byte g1, byte g2, byte g3);
+	void MIFARE_SetAccessBits(uint8_t *accessBitBuffer, uint8_t g0, uint8_t g1, uint8_t g2, uint8_t g3);
 	bool MIFARE_OpenUidBackdoor(bool logErrors);
-	bool MIFARE_SetUid(byte *newUid, byte uidSize, bool logErrors);
+	bool MIFARE_SetUid(uint8_t *newUid, uint8_t uidSize, bool logErrors);
 	bool MIFARE_UnbrickUidSector(bool logErrors);
-	
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	// Convenience functions - does not add extra functionality
 	/////////////////////////////////////////////////////////////////////////////////////
 	bool PICC_IsNewCardPresent();
 	bool PICC_ReadCardSerial();
-	
+
 private:
-	byte MIFARE_TwoStepHelper(byte command, byte blockAddr, long data);
+	uint8_t MIFARE_TwoStepHelper(uint8_t command, uint8_t blockAddr, long data);
 };
 
-#endif
+}
