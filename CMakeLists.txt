@@ -6,7 +6,7 @@ project(mfrc522_cpp)
 add_subdirectory(external/spidevpp/libs/)
 
 # Libs
-add_subdirectory(libs/mfrc522/)
+add_subdirectory(libs/)
 
 # Apos
 add_subdirectory(apps/spidev_read_example/)
